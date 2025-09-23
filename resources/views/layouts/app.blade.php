@@ -109,11 +109,13 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{{ route('legends.index') }}">Legends</a>
                     </li>
+                    <!-- Analysis Dropdown -->
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="analysisDropdown" role="button" data-bs-toggle="dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="analysisDropdown" role="button" 
+                           data-bs-toggle="dropdown" aria-expanded="false">
                             Analysis
                         </a>
-                        <ul class="dropdown-menu">
+                        <ul class="dropdown-menu" aria-labelledby="analysisDropdown">
                             <li><a class="dropdown-item" href="{{ route('analysis.flood-areas') }}">Flood Areas</a></li>
                             <li><a class="dropdown-item" href="{{ route('analysis.health-status') }}">Health Status</a></li>
                             <li><a class="dropdown-item" href="{{ route('analysis.land-use') }}">Land Use</a></li>
