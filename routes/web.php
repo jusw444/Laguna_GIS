@@ -1,6 +1,8 @@
 <?php
 
-use App\Http\Controllers\AnalysisController;
+use App\Http\Controllers\FloodAreaController;
+use App\Http\Controllers\HealthStatusController;
+use App\Http\Controllers\LandUseController;
 use App\Http\Controllers\LayerController;
 use App\Http\Controllers\LegendController;
 use App\Http\Controllers\MetadataController;
@@ -21,6 +23,22 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
+
+// Flood Area routes
+Route::resource('flood-areas', FloodAreaController::class);
+Route::get('/flood-areas/stats', [FloodAreaController::class, 'stats'])
+    ->name('flood-areas.stats');
+
+// Health Status routes
+Route::get('analysis/health-status', [HealthStatusController::class, 'apiIndex'])->name('api.analysis.health-status');
+Route::get('/health-status/stats', [HealthStatusController::class, 'stats'])
+    ->name('health-status.stats');
+Route::resource('health-status', HealthStatusController::class);
+
+// Land Use routes
+Route::get('/land-use/stats', [LandUseController::class, 'stats'])->name('land-use.stats');
+Route::get('analysis/land-use', [LandUseController::class, 'apiIndex'])->name('api.analysis.land-use');
+Route::resource('land-use', LandUseController::class);
 
 // Shapefile routes
 Route::get('/shapefiles', [ShapefileController::class, 'index'])->name('shapefiles.index');
@@ -47,15 +65,5 @@ Route::get('/legends/{id}', [LegendController::class, 'show'])->name('legends.sh
 Route::put('/legends/{id}', [LegendController::class, 'update'])->name('legends.update');
 Route::patch('/legends/{id}', [LegendController::class, 'update'])->name('legends.patch');
 Route::delete('/legends/{id}', [LegendController::class, 'destroy'])->name('legends.destroy');
-
-// Blade views (UI pages)
-Route::get('/analysis/flood-areas', [AnalysisController::class, 'floodAreas'])->name('analysis.flood-areas');
-Route::get('/analysis/health-status', [AnalysisController::class, 'healthStatus'])->name('analysis.health-status');
-Route::get('/analysis/land-use', [AnalysisController::class, 'landUseAnalysis'])->name('analysis.land-use');
-
-// API (JSON endpoints for Leaflet)
-Route::get('/api/analysis/flood-areas', [AnalysisController::class, 'floodAreasJson'])->name('api.analysis.flood-areas');
-Route::get('/api/analysis/health-status', [AnalysisController::class, 'healthStatusJson'])->name('api.analysis.health-status');
-Route::get('/api/analysis/land-use', [AnalysisController::class, 'landUseJson'])->name('api.analysis.land-use');
 
 require __DIR__.'/auth.php';

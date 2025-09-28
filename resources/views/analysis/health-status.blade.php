@@ -9,6 +9,9 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2><i class="fas fa-heartbeat"></i> Health Status Analysis</h2>
             <div class="btn-group">
+                <a href="{{ route('health-status.create') }}" class="btn btn-danger">
+                    <i class="fas fa-plus"></i> Add Health Status
+                </a>
                 <button class="btn btn-outline-primary" id="exportData">
                     <i class="fas fa-download"></i> Export Data
                 </button>
@@ -20,52 +23,7 @@
 
         <div class="row">
             <!-- Sidebar -->
-            <div class="col-md-3">
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">Analysis Options</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label for="healthStatusFilter" class="form-label">Health Status</label>
-                            <select class="form-select" id="healthStatusFilter">
-                                <option value="all">All Statuses</option>
-                                <option value="excellent">Excellent</option>
-                                <option value="good">Good</option>
-                                <option value="fair">Fair</option>
-                                <option value="poor">Poor</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label for="diseaseFilter" class="form-label">Disease Cases</label>
-                            <select class="form-select" id="diseaseFilter">
-                                <option value="all">All Levels</option>
-                                <option value="high">High (50+ cases)</option>
-                                <option value="medium">Medium (10-49 cases)</option>
-                                <option value="low">Low (1-9 cases)</option>
-                                <option value="none">No Cases</option>
-                            </select>
-                        </div>
-                        <button class="btn btn-primary w-100" id="applyFilters">Apply Filters</button>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">Statistics</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <h6>Health Status Distribution</h6>
-                            <canvas id="healthStatusChart" height="200"></canvas>
-                        </div>
-                        <div class="mb-3">
-                            <h6>Disease Cases</h6>
-                            <canvas id="diseaseChart" height="200"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            @include('sidebars.health-sidebar')
 
             <!-- Map + Table -->
             <div class="col-md-9">
@@ -88,7 +46,7 @@
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
-                            <table class="table table-striped" id="healthDataTable">
+                            <table class="table table-striped align-middle" id="healthDataTable">
                                 <thead>
                                     <tr>
                                         <th>Area Name</th>
@@ -96,10 +54,39 @@
                                         <th>Disease Cases</th>
                                         <th>Clinics Available</th>
                                         <th>Land Use</th>
+                                        <th class="text-center">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <!-- Data will be populated via JavaScript -->
+                                    @foreach ($statuses as $s)
+                                        <tr>
+                                            <td>{{ $s->name ?? 'Unnamed' }}</td>
+                                            <td>
+                                                <span class="badge 
+                                                    {{ $s->health_status == 'excellent' ? 'bg-success' : 
+                                                       ($s->health_status == 'good' ? 'bg-primary' : 
+                                                       ($s->health_status == 'fair' ? 'bg-warning' : 'bg-danger')) }}">
+                                                    {{ ucfirst($s->health_status) }}
+                                                </span>
+                                            </td>
+                                            <td>{{ $s->disease_cases ?? 0 }}</td>
+                                            <td>{{ $s->clinics_available ?? 0 }}</td>
+                                            <td>{{ $s->land_use ?? 'N/A' }}</td>
+                                            <td class="text-center">
+                                                <a href="{{ route('health-status.edit', $s->id) }}" class="btn btn-sm text-white"
+                                                        style="background-color:#0d47a1; border-color:#0d47a1;">
+                                                    <i class="fas fa-edit"></i> Edit
+                                                </a>
+                                                <form action="{{ route('health-status.destroy', $s->id) }}" method="POST" style="display:inline-block;">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?')">
+                                                        <i class="fas fa-trash"></i> Delete
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    @endforeach
                                 </tbody>
                             </table>
                         </div>
@@ -112,184 +99,127 @@
 @endsection
 
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    var map = L.map('map').setView([0, 0], 2);
+document.addEventListener('DOMContentLoaded', async function() {
+    var healthStatuses = @json($statuses);
 
+    // Build GeoJSON
+    var geojsonData = {
+        type: "FeatureCollection",
+        features: healthStatuses.map(s => ({
+            type: "Feature",
+            geometry: JSON.parse(s.geometry),
+            properties: s
+        }))
+    };
+
+    // Map init
+    var map = L.map('map').setView([14.2096, 121.1656], 10);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
     // Legend
-    var legend = L.control({position: 'bottomright'});
-    legend.onAdd = function(map) {
-        var div = L.DomUtil.create('div', 'legend');
-        div.innerHTML = '<h6>Health Status Legend</h6>' +
-            '<div class="legend-item"><span class="legend-color" style="background-color: #00ff00"></span> Excellent</div>' +
-            '<div class="legend-item"><span class="legend-color" style="background-color: #aaff00"></span> Good</div>' +
-            '<div class="legend-item"><span class="legend-color" style="background-color: #ffff00"></span> Fair</div>' +
-            '<div class="legend-item"><span class="legend-color" style="background-color: #ff0000"></span> Poor</div>';
+    var legend = L.control({ position: 'bottomright' });
+    legend.onAdd = () => {
+        var div = L.DomUtil.create('div', 'legend bg-white p-2 border');
+        div.innerHTML = `
+            <h6>Health Status Legend</h6>
+            <div><span style="background:#00ff00;width:20px;height:20px;display:inline-block"></span> Excellent</div>
+            <div><span style="background:#aaff00;width:20px;height:20px;display:inline-block"></span> Good</div>
+            <div><span style="background:#ffff00;width:20px;height:20px;display:inline-block"></span> Fair</div>
+            <div><span style="background:#ff0000;width:20px;height:20px;display:inline-block"></span> Poor</div>
+        `;
         return div;
     };
     legend.addTo(map);
 
-    document.getElementById('toggleLegend').addEventListener('change', function() {
-        this.checked ? legend.addTo(map) : map.removeControl(legend);
+    document.getElementById('toggleLegend').addEventListener('change', e => {
+        e.target.checked ? legend.addTo(map) : map.removeControl(legend);
     });
 
-    var healthData = [];
-    var healthLayers = [];
+    var healthLayers = L.geoJSON(geojsonData, {
+        style: f => getStyle(f.properties),
+        onEachFeature: (f, layer) => layer.bindPopup(createPopupContent(f.properties))
+    }).addTo(map);
 
-    // ✅ FIXED: use API route for JSON
-    fetch("{{ route('api.analysis.health-status') }}")
-        .then(response => response.json())
-        .then(data => {
-            healthData = data.features;
+    if (healthStatuses.length > 0) map.fitBounds(healthLayers.getBounds());
 
-            healthLayers = L.geoJSON(data, {
-                style: f => getStyle(f.properties),
-                onEachFeature: (f, layer) => {
-                    layer.bindPopup(createPopupContent(f.properties));
-                }
-            }).addTo(map);
+    // Load stats via API
+    const params = new URLSearchParams(window.location.search);
+    const statsRes = await fetch(`{{ route('health-status.stats') }}?${params.toString()}`);
+    const stats = await statsRes.json();
 
-            if (healthData.length > 0) {
-                map.fitBounds(healthLayers.getBounds());
-            }
+    createCharts(stats);
+    document.getElementById('clinicsTotal').textContent = stats.clinics;
 
-            populateDataTable(healthData);
-            createCharts(healthData);
-        });
-
-    document.getElementById('applyFilters').addEventListener('click', function() {
-        var statusFilter = document.getElementById('healthStatusFilter').value;
-        var diseaseFilter = document.getElementById('diseaseFilter').value;
-
-        var filtered = healthData.filter(f => {
-            var s = statusFilter === 'all' || f.properties.health_status === statusFilter;
-            var d = diseaseFilter === 'all' || checkDiseaseLevel(f.properties.disease_cases, diseaseFilter);
-            return s && d;
-        });
-
-        map.removeLayer(healthLayers);
-        healthLayers = L.geoJSON({
-            type: 'FeatureCollection',
-            features: filtered
-        }, {
-            style: f => getStyle(f.properties),
-            onEachFeature: (f, layer) => {
-                layer.bindPopup(createPopupContent(f.properties));
-            }
-        }).addTo(map);
-
-        populateDataTable(filtered);
-    });
-
-    function checkDiseaseLevel(cases, level) {
-        cases = cases || 0;
-        switch(level) {
-            case 'high': return cases >= 50;
-            case 'medium': return cases >= 10 && cases < 50;
-            case 'low': return cases > 0 && cases < 10;
-            case 'none': return cases === 0;
-            default: return true;
-        }
-    }
-
+    // Helpers
     function getStyle(p) {
         var color = '#3388ff';
         if (p.health_status === 'excellent') color = '#00ff00';
         else if (p.health_status === 'good') color = '#aaff00';
         else if (p.health_status === 'fair') color = '#ffff00';
         else if (p.health_status === 'poor') color = '#ff0000';
-        return { color: color, weight: 2, opacity: 0.7, fillOpacity: 0.5 };
+        return { color, weight: 2, opacity: 0.7, fillOpacity: 0.5 };
     }
 
     function createPopupContent(p) {
-        return `<div class="map-popup">
-            <h6>${p.name || 'Unnamed Area'}</h6>
-            <table class="table table-sm">
-                <tr><th>Health Status:</th><td>${p.health_status || 'N/A'}</td></tr>
-                <tr><th>Disease Cases:</th><td>${p.disease_cases || 0}</td></tr>
-                <tr><th>Clinics Available:</th><td>${p.clinics_available || 0}</td></tr>
-                <tr><th>Land Use:</th><td>${p.land_use || 'N/A'}</td></tr>
-            </table>
-        </div>`;
+        return `<strong>${p.name}</strong><br>
+        Health Status: ${p.health_status}<br>
+        Disease Cases: ${p.disease_cases||0}<br>
+        Clinics Available: ${p.clinics_available||0}<br>
+        Land Use: ${p.land_use||'N/A'}`;
     }
 
-    function populateDataTable(data) {
-        var tbody = document.querySelector('#healthDataTable tbody');
-        tbody.innerHTML = '';
-        data.forEach(f => {
-            var p = f.properties;
-            var row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${p.name || 'Unnamed'}</td>
-                <td><span class="badge bg-${getBadge(p.health_status)}">${p.health_status || 'N/A'}</span></td>
-                <td>${p.disease_cases || 0}</td>
-                <td>${p.clinics_available || 0}</td>
-                <td>${p.land_use || 'N/A'}</td>
-            `;
-            tbody.appendChild(row);
-        });
-    }
-
-    function getBadge(status) {
-        switch(status) {
-            case 'excellent': return 'success';
-            case 'good': return 'primary';
-            case 'fair': return 'warning';
-            case 'poor': return 'danger';
-            default: return 'secondary';
-        }
-    }
-
-    function createCharts(data) {
-        var statusCounts = { excellent: 0, good: 0, fair: 0, poor: 0 };
-        var diseaseLevels = { none: 0, low: 0, medium: 0, high: 0 };
-
-        data.forEach(f => {
-            var s = f.properties.health_status || 'fair';
-            statusCounts[s] = (statusCounts[s] || 0) + 1;
-
-            var cases = f.properties.disease_cases || 0;
-            if (cases >= 50) diseaseLevels.high++;
-            else if (cases >= 10) diseaseLevels.medium++;
-            else if (cases > 0) diseaseLevels.low++;
-            else diseaseLevels.none++;
-        });
-
+    function createCharts(stats) {
         new Chart(document.getElementById('healthStatusChart'), {
             type: 'doughnut',
             data: {
                 labels: ['Excellent','Good','Fair','Poor'],
-                datasets: [{ data: [statusCounts.excellent,statusCounts.good,statusCounts.fair,statusCounts.poor], backgroundColor: ['#00ff00','#aaff00','#ffff00','#ff0000'] }]
+                datasets: [{
+                    data: [
+                        stats.healthStatus.excellent,
+                        stats.healthStatus.good,
+                        stats.healthStatus.fair,
+                        stats.healthStatus.poor
+                    ],
+                    backgroundColor: ['#00ff00','#aaff00','#ffff00','#ff0000']
+                }]
             }
         });
 
         new Chart(document.getElementById('diseaseChart'), {
             type: 'bar',
             data: {
-                labels: ['No Cases','Low (1-9)','Medium (10-49)','High (50+)'],
-                datasets: [{ label: 'Areas', data: [diseaseLevels.none,diseaseLevels.low,diseaseLevels.medium,diseaseLevels.high], backgroundColor: '#3388ff' }]
+                labels: Object.keys(stats.landUse),
+                datasets: [{
+                    label: 'Areas',
+                    data: Object.values(stats.landUse),
+                    backgroundColor: '#3388ff'
+                }]
             },
             options: { scales: { y: { beginAtZero: true } } }
         });
     }
 
+    // Export CSV
     document.getElementById('exportData').addEventListener('click', function() {
-        var csv = 'Area Name,Health Status,Disease Cases,Clinics Available,Land Use\n';
-        healthData.forEach(f => {
-            var p = f.properties;
-            csv += `"${p.name || 'Unnamed'}",${p.health_status},${p.disease_cases || 0},${p.clinics_available || 0},${p.land_use || 'N/A'}\n`;
+        var csv = "Area Name,Health Status,Disease Cases,Clinics Available,Land Use\n";
+        healthStatuses.forEach(s => {
+            csv += `"${s.name}","${s.health_status}",${s.disease_cases||0},${s.clinics_available||0},"${s.land_use||''}"\n`;
         });
         var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        var link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = 'health_analysis_data.csv';
-        link.click();
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        a.href = url;
+        a.download = "health_status.csv";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
     });
 
+    // Print Map
     document.getElementById('printMap').addEventListener('click', function() {
         window.print();
     });

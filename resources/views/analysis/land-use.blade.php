@@ -1,4 +1,3 @@
-<!-- resources/views/analysis/land-use.blade.php -->
 @extends('layouts.app')
 
 @section('title', 'Land Use Analysis')
@@ -10,8 +9,11 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2><i class="fas fa-map-marked-alt"></i> Land Use Analysis</h2>
             <div class="btn-group">
+                <a href="{{ route('land-use.create') }}" class="btn btn-danger">
+                    <i class="fas fa-plus"></i> Add Land Use
+                </a>
                 <button class="btn btn-outline-primary" id="exportData">
-                    <i class="fas fa-download"></i> Export Data
+                    <i class="fas fa-download"></i> Export Data (PNG)
                 </button>
                 <button class="btn btn-outline-info" id="printMap">
                     <i class="fas fa-print"></i> Print Map
@@ -19,60 +21,9 @@
             </div>
         </div>
 
-        <div class="row">
+        <div class="row" id="exportContainer">
             <!-- Sidebar -->
-            <div class="col-md-3">
-                <!-- Filters -->
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">Analysis Filters</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label for="landUseFilter" class="form-label">Land Use Type</label>
-                            <select class="form-select" id="landUseFilter">
-                                <option value="all">All Types</option>
-                                <option value="residential">Residential</option>
-                                <option value="commercial">Commercial</option>
-                                <option value="agricultural">Agricultural</option>
-                                <option value="industrial">Industrial</option>
-                                <option value="recreational">Recreational</option>
-                                <option value="conservation">Conservation</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label for="ownershipFilter" class="form-label">Ownership</label>
-                            <select class="form-select" id="ownershipFilter">
-                                <option value="all">All Types</option>
-                                <option value="private">Private</option>
-                                <option value="public">Public</option>
-                                <option value="government">Government</option>
-                                <option value="communal">Communal</option>
-                            </select>
-                        </div>
-                        <button class="btn btn-primary w-100" id="applyFilters">
-                            <i class="fas fa-filter"></i> Apply Filters
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Statistics -->
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">Statistics</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="mb-4">
-                            <h6 class="text-center">Land Use Distribution</h6>
-                            <canvas id="landUseChart" height="200"></canvas>
-                        </div>
-                        <div>
-                            <h6 class="text-center">Ownership Distribution</h6>
-                            <canvas id="ownershipChart" height="200"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            @include('sidebars.land-sidebar')
 
             <!-- Map + Data -->
             <div class="col-md-9">
@@ -97,18 +48,43 @@
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
-                            <table class="table table-striped" id="landUseDataTable">
-                                <thead class="table-dark">
+                            <table class="table table-striped align-middle" id="landUseDataTable">
+                                <thead>
                                     <tr>
                                         <th>Area Name</th>
                                         <th>Land Use</th>
                                         <th>Ownership</th>
                                         <th>Classification</th>
                                         <th>Flood Risk</th>
+                                        <th class="text-center">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <!-- JS will populate -->
+                                    @foreach ($landUses as $lu)
+                                        <tr>
+                                            <td>{{ $lu->name ?? 'Unnamed' }}</td>
+                                            <td>
+                                                <span class="badge" style="background-color: {{ getLandUseColor($lu->land_use) }}">
+                                                    {{ ucfirst($lu->land_use) ?? 'N/A' }}
+                                                </span>
+                                            </td>
+                                            <td>{{ $lu->ownership ?? 'N/A' }}</td>
+                                            <td>{{ $lu->classification ?? 'N/A' }}</td>
+                                            <td>{{ $lu->flood_risk ?? 'N/A' }}</td>
+                                            <td class="text-center">
+                                                <a href="{{ route('land-use.edit', $lu->id) }}" class="btn btn-sm text-white" style="background-color:#0d47a1;">
+                                                    <i class="fas fa-edit"></i> Edit
+                                                </a>
+                                                <form action="{{ route('land-use.destroy', $lu->id) }}" method="POST" style="display:inline-block;">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?')">
+                                                        <i class="fas fa-trash"></i> Delete
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    @endforeach
                                 </tbody>
                             </table>
                         </div>
@@ -120,197 +96,158 @@
 </div>
 @endsection
 
-@push('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Init Map
-    var map = L.map('map').setView([0, 0], 2);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map);
+@php
+function getLandUseColor($type) {
+    switch ($type) {
+        case 'residential': return '#007bff';
+        case 'commercial': return '#28a745';
+        case 'agricultural': return '#ffc107';
+        case 'industrial': return '#dc3545';
+        case 'institutional': return '#6f42c1';
+        case 'recreational': return '#20c997';
+        case 'conservation': return '#fd7e14';
+        default: return '#999999';
+    }
+}
+@endphp
 
-    // Legend
-    var legend = L.control({position: 'bottomright'});
-    legend.onAdd = function() {
-        var div = L.DomUtil.create('div', 'legend bg-white p-2 rounded shadow');
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://unpkg.com/leaflet-image/leaflet-image.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', async function() {
+    var landUses = @json($landUses);
+
+    var geojsonData = {
+        type: "FeatureCollection",
+        features: landUses.map(lu => ({
+            type: "Feature",
+            geometry: lu.geometry ? JSON.parse(lu.geometry) : null,
+            properties: lu
+        }))
+    };
+
+    // Map Init
+    window.map = L.map('map').setView([14.2096, 121.1656], 10);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(window.map);
+
+    var legend = L.control({ position: 'bottomright' });
+    legend.onAdd = () => {
+        var div = L.DomUtil.create('div', 'legend bg-white p-2 border');
         div.innerHTML = `
             <h6>Land Use Legend</h6>
-            <div><span class="legend-color" style="background:#ff9999"></span> Residential</div>
-            <div><span class="legend-color" style="background:#77ff77"></span> Commercial</div>
-            <div><span class="legend-color" style="background:#ffff77"></span> Agricultural</div>
-            <div><span class="legend-color" style="background:#ff77ff"></span> Industrial</div>
-            <div><span class="legend-color" style="background:#77ffff"></span> Recreational</div>
-            <div><span class="legend-color" style="background:#7777ff"></span> Conservation</div>
+            <div><span style="background:#007bff;width:20px;height:20px;display:inline-block"></span> Residential</div>
+            <div><span style="background:#28a745;width:20px;height:20px;display:inline-block"></span> Commercial</div>
+            <div><span style="background:#ffc107;width:20px;height:20px;display:inline-block"></span> Agricultural</div>
+            <div><span style="background:#dc3545;width:20px;height:20px;display:inline-block"></span> Industrial</div>
+            <div><span style="background:#6f42c1;width:20px;height:20px;display:inline-block"></span> Institutional</div>
+            <div><span style="background:#20c997;width:20px;height:20px;display:inline-block"></span> Recreational</div>
+            <div><span style="background:#fd7e14;width:20px;height:20px;display:inline-block"></span> Conservation</div>
         `;
         return div;
     };
-    legend.addTo(map);
+    legend.addTo(window.map);
 
-    document.getElementById('toggleLegend').addEventListener('change', function() {
-        this.checked ? legend.addTo(map) : map.removeControl(legend);
+    document.getElementById('toggleLegend').addEventListener('change', e => {
+        e.target.checked ? legend.addTo(window.map) : window.map.removeControl(legend);
     });
 
-    // Data vars
-    var landUseData = [];
-    var landUseLayers = null;
-    var landUseChart = null, ownershipChart = null;
+    var landUseLayers = L.geoJSON(geojsonData, {
+        style: f => ({
+            color: getLandUseColor(f.properties.land_use),
+            fillColor: getLandUseColor(f.properties.land_use),
+            weight: 2, opacity: 0.8, fillOpacity: 0.5
+        }),
+        onEachFeature: (f, layer) => layer.bindPopup(createPopupContent(f.properties))
+    }).addTo(window.map);
 
-    // Fetch API data
-    fetch("{{ route('api.analysis.land-use') }}")
-        .then(res => res.json())
-        .then(data => {
-            landUseData = data.features;
+    if (landUses.length > 0) window.map.fitBounds(landUseLayers.getBounds());
 
-            landUseLayers = L.geoJSON(data, {
-                style: f => getStyle(f.properties),
-                onEachFeature: (f, layer) => layer.bindPopup(createPopupContent(f.properties))
-            }).addTo(map);
+    // Load stats
+    try {
+        let params = new URLSearchParams(window.location.search);
+        let res = await fetch("{{ route('land-use.stats') }}?" + params.toString());
+        let stats = await res.json();
 
-            if (landUseData.length > 0) {
-                map.fitBounds(landUseLayers.getBounds());
-            }
-
-            populateDataTable(landUseData);
-            createCharts(landUseData);
-        });
-
-    // Apply Filters
-    document.getElementById('applyFilters').addEventListener('click', function() {
-        var luFilter = document.getElementById('landUseFilter').value;
-        var oFilter = document.getElementById('ownershipFilter').value;
-
-        var filtered = landUseData.filter(f => {
-            var luMatch = luFilter === 'all' || (f.properties.land_use && f.properties.land_use.toLowerCase() === luFilter);
-            var oMatch = oFilter === 'all' || (f.properties.ownership && f.properties.ownership.toLowerCase() === oFilter);
-            return luMatch && oMatch;
-        });
-
-        if (landUseLayers) map.removeLayer(landUseLayers);
-        landUseLayers = L.geoJSON({ type: 'FeatureCollection', features: filtered }, {
-            style: f => getStyle(f.properties),
-            onEachFeature: (f, layer) => layer.bindPopup(createPopupContent(f.properties))
-        }).addTo(map);
-
-        populateDataTable(filtered);
-        createCharts(filtered);
-    });
-
-    // Helpers
-    function getStyle(p) {
-        var color = '#3388ff';
-        if (p.land_use) {
-            switch(p.land_use.toLowerCase()) {
-                case 'residential': color = '#ff9999'; break;
-                case 'commercial': color = '#77ff77'; break;
-                case 'agricultural': color = '#ffff77'; break;
-                case 'industrial': color = '#ff77ff'; break;
-                case 'recreational': color = '#77ffff'; break;
-                case 'conservation': color = '#7777ff'; break;
-            }
-        }
-        return { color, weight: 2, opacity: 0.7, fillOpacity: 0.5 };
-    }
-
-    function createPopupContent(p) {
-        return `
-            <div class="map-popup">
-                <h6>${p.name || 'Unnamed Area'}</h6>
-                <table class="table table-sm">
-                    <tr><th>Land Use:</th><td>${p.land_use || 'N/A'}</td></tr>
-                    <tr><th>Ownership:</th><td>${p.ownership || 'N/A'}</td></tr>
-                    <tr><th>Classification:</th><td>${p.classification || 'N/A'}</td></tr>
-                    <tr><th>Flood Risk:</th><td>${p.flood_risk || 'N/A'}</td></tr>
-                </table>
-            </div>
-        `;
-    }
-
-    function populateDataTable(data) {
-        var tbody = document.querySelector('#landUseDataTable tbody');
-        tbody.innerHTML = '';
-        data.forEach(f => {
-            var p = f.properties;
-            tbody.innerHTML += `
-                <tr>
-                    <td>${p.name || 'Unnamed'}</td>
-                    <td><span class="badge bg-${getLandUseBadgeClass(p.land_use)}">${p.land_use || 'N/A'}</span></td>
-                    <td>${p.ownership || 'N/A'}</td>
-                    <td>${p.classification || 'N/A'}</td>
-                    <td><span class="badge bg-${getRiskBadgeClass(p.flood_risk)}">${p.flood_risk || 'N/A'}</span></td>
-                </tr>
-            `;
-        });
-    }
-
-    function getLandUseBadgeClass(lu) {
-        if (!lu) return 'secondary';
-        switch(lu.toLowerCase()) {
-            case 'residential': return 'primary';
-            case 'commercial': return 'success';
-            case 'agricultural': return 'warning';
-            case 'industrial': return 'danger';
-            case 'recreational': return 'info';
-            case 'conservation': return 'dark';
-            default: return 'secondary';
-        }
-    }
-
-    function getRiskBadgeClass(r) {
-        if (!r) return 'secondary';
-        switch(r.toLowerCase()) {
-            case 'high': return 'danger';
-            case 'medium': return 'warning';
-            case 'low': return 'success';
-            default: return 'secondary';
-        }
-    }
-
-    function createCharts(data) {
-        var luCounts = {}, oCounts = {};
-        data.forEach(f => {
-            luCounts[f.properties.land_use || 'Unknown'] = (luCounts[f.properties.land_use || 'Unknown'] || 0) + 1;
-            oCounts[f.properties.ownership || 'Unknown'] = (oCounts[f.properties.ownership || 'Unknown'] || 0) + 1;
-        });
-
-        if (landUseChart) landUseChart.destroy();
-        if (ownershipChart) ownershipChart.destroy();
-
-        landUseChart = new Chart(document.getElementById('landUseChart'), {
-            type: 'pie',
+        new Chart(document.getElementById('landUseChart'), {
+            type: 'doughnut',
             data: {
-                labels: Object.keys(luCounts),
-                datasets: [{ data: Object.values(luCounts), backgroundColor: ['#ff9999','#77ff77','#ffff77','#ff77ff','#77ffff','#7777ff','#cccccc'] }]
+                labels: Object.keys(stats.landUse),
+                datasets: [{
+                    data: Object.values(stats.landUse),
+                    backgroundColor: Object.keys(stats.landUse).map(t => getLandUseColor(t))
+                }]
             }
         });
 
-        ownershipChart = new Chart(document.getElementById('ownershipChart'), {
+        new Chart(document.getElementById('ownershipChart'), {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(stats.ownership),
+                datasets: [{
+                    data: Object.values(stats.ownership),
+                    backgroundColor: ['#3366cc', '#ff9900', '#109618', '#990099']
+                }]
+            }
+        });
+
+        new Chart(document.getElementById('floodRiskChart'), {
             type: 'bar',
             data: {
-                labels: Object.keys(oCounts),
-                datasets: [{ label: 'Areas', data: Object.values(oCounts), backgroundColor: '#3388ff' }]
-            },
-            options: { scales: { y: { beginAtZero: true } } }
+                labels: Object.keys(stats.floodRisk),
+                datasets: [{
+                    label: 'Flood Risk Count',
+                    data: Object.values(stats.floodRisk),
+                    backgroundColor: ['#dc3545', '#ffc107', '#28a745', '#6c757d']
+                }]
+            }
         });
+
+    } catch (err) {
+        console.error("Failed to load stats:", err);
     }
 
-    // Export CSV
-    document.getElementById('exportData').addEventListener('click', function() {
-        var csv = 'Area Name,Land Use,Ownership,Classification,Flood Risk\n';
-        landUseData.forEach(f => {
-            var p = f.properties;
-            csv += `"${p.name || 'Unnamed'}",${p.land_use || 'N/A'},${p.ownership || 'N/A'},${p.classification || 'N/A'},${p.flood_risk || 'N/A'}\n`;
-        });
-        var blob = new Blob([csv], { type: 'text/csv' });
-        var link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = 'land_use_analysis.csv';
+    // === EXPORT MAP + STATS AS PNG ===
+    document.getElementById("exportData").addEventListener("click", async () => {
+        let container = document.getElementById("exportContainer");
+        let canvas = await html2canvas(container, { scale: 2 });
+        let link = document.createElement("a");
+        link.download = "land_use_analysis.png";
+        link.href = canvas.toDataURL("image/png");
         link.click();
     });
 
-    // Print Map
-    document.getElementById('printMap').addEventListener('click', function() {
+    // Print map only
+    document.getElementById("printMap").addEventListener("click", () => {
         window.print();
     });
 });
+
+function getLandUseColor(type) {
+    switch (type) {
+        case 'residential': return '#007bff';
+        case 'commercial': return '#28a745';
+        case 'agricultural': return '#ffc107';
+        case 'industrial': return '#dc3545';
+        case 'institutional': return '#6f42c1';
+        case 'recreational': return '#20c997';
+        case 'conservation': return '#fd7e14';
+        default: return '#999999';
+    }
+}
+
+function createPopupContent(props) {
+    return `
+        <b>${props.name ?? 'Unnamed Area'}</b><br>
+        Land Use: ${props.land_use}<br>
+        Ownership: ${props.ownership ?? 'N/A'}<br>
+        Classification: ${props.classification ?? 'N/A'}<br>
+        Flood Risk: ${props.flood_risk ?? 'N/A'}
+    `;
+}
 </script>
 @endpush
