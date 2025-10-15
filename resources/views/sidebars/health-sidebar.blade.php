@@ -4,7 +4,8 @@
             <h5 class="card-title mb-0">Analysis Options</h5>
         </div>
         <div class="card-body">
-            <form method="GET" action="{{ route('health-status.index') }}">
+            <form method="GET" action="{{ $formAction ?? '' }}">
+                @csrf
                 <div class="mb-3">
                     <label for="healthStatusFilter" class="form-label">Health Status</label>
                     <select class="form-select" name="health_status" id="healthStatusFilter">

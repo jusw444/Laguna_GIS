@@ -4,7 +4,8 @@
                             <h5 class="card-title mb-0">Analysis Options</h5>
                         </div>
                         <div class="card-body">
-                            <form method="GET" action="{{ route('flood-areas.index') }}">
+                            <form method="GET" action="{{ $formAction ?? '' }}">
+                                @csrf
                                 <div class="mb-3">
                                     <label for="floodRiskFilter" class="form-label">Flood Risk Level</label>
                                     <select class="form-select" name="flood_risk" id="floodRiskFilter">

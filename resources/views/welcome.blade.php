@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.guest')
 
 @section('title', 'Welcome')
 
@@ -22,14 +22,14 @@
 
                                     <div class="row g-3">
                                         <div class="col-md-6">
-                                            <a href="{{ route('shapefiles.index') }}"
+                                            <a href=""
                                                 class="btn btn-primary w-100 d-flex align-items-center justify-content-center py-3">
                                                 <i class="fas fa-layer-group me-2"></i>
                                                 <span>Manage Shapefiles</span>
                                             </a>
                                         </div>
                                         <div class="col-md-6">
-                                            <a href="{{ route('legends.index') }}"
+                                            <a href=""
                                                 class="btn btn-success w-100 d-flex align-items-center justify-content-center py-3">
                                                 <i class="fas fa-palette me-2"></i>
                                                 <span>Manage Legends</span>

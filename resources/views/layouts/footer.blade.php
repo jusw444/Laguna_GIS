@@ -35,10 +35,9 @@
                 <h5>Quick Links</h5>
                 <ul class="footer-links">
                     <li><a href="{{ route('welcome') }}"><i class="fas fa-home fa-sm me-2"></i>Home</a></li>
-                    <li><a href="{{ route('shapefiles.index') }}"><i class="fas fa-layer-group fa-sm me-2"></i>Shapefiles</a></li>
-                    <li><a href="{{ route('legends.index') }}"><i class="fas fa-palette fa-sm me-2"></i>Legends</a></li>
-                    <li><a href="{{ route('flood-areas.index') }}"><i class="fas fa-water fa-sm me-2"></i>Flood Analysis</a></li>
-                    <li><a href="{{ route('health-status.index') }}"><i class="fas fa-heartbeat fa-sm me-2"></i>Health Status</a></li>
+                    <li><a href=""><i class="fas fa-palette fa-sm me-2"></i>Flood Areas</a></li>
+                    <li><a href=""><i class="fas fa-water fa-sm me-2"></i>Health Status</a></li>
+                    <li><a href=""><i class="fas fa-heartbeat fa-sm me-2"></i>Land Use</a></li>
                 </ul>
             </div>
             

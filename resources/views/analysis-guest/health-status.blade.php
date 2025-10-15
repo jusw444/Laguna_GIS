@@ -1,5 +1,5 @@
 <!-- resources/views/analysis/health-status.blade.php -->
-@extends('layouts.app')
+@extends('layouts.guest')
 
 @section('title', 'Health Status Analysis')
 
@@ -9,9 +9,6 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2><i class="fas fa-heartbeat"></i> Health Status Analysis</h2>
             <div class="btn-group">
-                <a href="{{ route('health-status.create') }}" class="btn btn-danger">
-                    <i class="fas fa-plus"></i> Add Health Status
-                </a>
                 <button class="btn btn-outline-primary" id="exportData">
                     <i class="fas fa-download"></i> Export Data
                 </button>
@@ -23,10 +20,9 @@
 
         <div class="row">
             <!-- Sidebar -->
-           @include('sidebars.health-sidebar', [
-        'formAction' => route('health-status.index')
+            @include('sidebars.health-sidebar', [
+        'formAction' => route('landing.health')
     ])
-
 
             <!-- Map + Table -->
             <div class="col-md-9">
@@ -57,7 +53,6 @@
                                         <th>Disease Cases</th>
                                         <th>Clinics Available</th>
                                         <th>Land Use</th>
-                                        <th class="text-center">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -75,19 +70,6 @@
                                             <td>{{ $s->disease_cases ?? 0 }}</td>
                                             <td>{{ $s->clinics_available ?? 0 }}</td>
                                             <td>{{ $s->land_use ?? 'N/A' }}</td>
-                                            <td class="text-center">
-                                                <a href="{{ route('health-status.edit', $s->id) }}" class="btn btn-sm text-white"
-                                                        style="background-color:#0d47a1; border-color:#0d47a1;">
-                                                    <i class="fas fa-edit"></i> Edit
-                                                </a>
-                                                <form action="{{ route('health-status.destroy', $s->id) }}" method="POST" style="display:inline-block;">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?')">
-                                                        <i class="fas fa-trash"></i> Delete
-                                                    </button>
-                                                </form>
-                                            </td>
                                         </tr>
                                     @endforeach
                                 </tbody>

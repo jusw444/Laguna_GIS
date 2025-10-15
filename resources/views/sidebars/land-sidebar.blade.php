@@ -4,7 +4,8 @@
                         <h5 class="card-title mb-0">Analysis Options</h5>
                     </div>
                     <div class="card-body">
-                        <form method="GET" action="{{ route('land-use.index') }}" id="filterForm">
+                        <form method="GET" action="{{ $formAction ?? '' }}">
+                            @csrf
                             <div class="mb-3">
                                 <label for="landUseFilter" class="form-label">Land Use Type</label>
                                 <select class="form-select" name="land_use" id="landUseFilter">

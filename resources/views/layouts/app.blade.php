@@ -370,14 +370,14 @@
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('shapefiles.*') ? 'active' : '' }}" 
-                           href="{{ route('shapefiles.index') }}">
-                            <i class="fas fa-layer-group me-1"></i> Shapefiles
+                           href="">
+                            <i class="fas fa-layer-group me-1"></i> Home
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('legends.*') ? 'active' : '' }}" 
-                           href="{{ route('legends.index') }}">
-                            <i class="fas fa-palette me-1"></i> Legends
+                           href="">
+                            <i class="fas fa-palette me-1"></i> View Maps
                         </a>
                     </li>
                     <!-- Analysis Dropdown -->

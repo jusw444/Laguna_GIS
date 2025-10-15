@@ -1,5 +1,5 @@
 <!-- resources/views/analysis/flood-areas.blade.php -->
-@extends('layouts.app')
+@extends('layouts.guest')
 
 @section('title', 'Flood Area Analysis')
 
@@ -9,9 +9,6 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2><i class="fas fa-water"></i> Flood Area Analysis</h2>
             <div class="btn-group">
-                <a href="{{ route('flood-areas.create') }}" class="btn btn-danger">
-                    <i class="fas fa-plus"></i> Add Flood Area
-                </a>
                 <button class="btn btn-outline-primary" id="exportData">
                     <i class="fas fa-download"></i> Export Data
                 </button>
@@ -22,8 +19,8 @@
         </div>
 
         <div class="row">
-             @include('sidebars.flood-sidebar', [
-        'formAction' => route('flood-areas.index')
+            @include('sidebars.flood-sidebar', [
+        'formAction' => route('landing.flood')
     ])
 
             <div class="col-md-9">
@@ -54,7 +51,6 @@
                                         <th>Land Use</th>
                                         <th>Ownership</th>
                                         <th>Classification</th>
-                                        <th class="text-center">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -70,23 +66,6 @@
                                             <td>{{ $area->land_use ?? 'N/A' }}</td>
                                             <td>{{ $area->ownership ?? 'N/A' }}</td>
                                             <td>{{ $area->classification ?? 'N/A' }}</td>
-                                            <td class="text-center">
-                                                <a href="{{ route('flood-areas.edit', $area->id) }}"
-                                                    class="btn btn-sm text-white"
-                                                    style="background-color:#0d47a1; border-color:#0d47a1;">
-                                                    <i class="fas fa-edit"></i> Edit
-                                                </a>
-
-                                                <form action="{{ route('flood-areas.destroy', $area->id) }}"
-                                                    method="POST" style="display:inline-block;">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="btn btn-sm btn-danger"
-                                                        onclick="return confirm('Are you sure you want to delete this flood area?')">
-                                                        <i class="fas fa-trash"></i> Delete
-                                                    </button>
-                                                </form>
-                                            </td>
                                         </tr>
                                     @endforeach
                                 </tbody>

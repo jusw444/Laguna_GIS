@@ -3,24 +3,30 @@
 namespace App\Http\Controllers;
 
 use App\Models\FloodArea;
+use App\Services\FloodStatisticsService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class FloodAreaController extends Controller
 {
+
+    protected $floodStats;
+    public function __construct(FloodStatisticsService $floodStats)
+    {
+        $this->floodStats = $floodStats;
+    }
+
     /**
-     * Display a listing of flood areas with optional filters.
+     * Display main page (Flood Analysis)
      */
     public function index(Request $request)
     {
         $query = FloodArea::query();
 
-        // Apply Flood Risk filter
+        // Apply filters
         if ($request->filled('flood_risk') && $request->flood_risk !== 'all') {
             $query->where('flood_risk', $request->flood_risk);
         }
 
-        // Apply Land Use filter
         if ($request->filled('land_use') && $request->land_use !== 'all') {
             $query->where('land_use', $request->land_use);
         }
@@ -31,7 +37,7 @@ class FloodAreaController extends Controller
     }
 
     /**
-     * Show form for creating a new flood area.
+     * Create new flood area
      */
     public function create()
     {
@@ -39,7 +45,7 @@ class FloodAreaController extends Controller
     }
 
     /**
-     * Store a new flood area.
+     * Store new record
      */
     public function store(Request $request)
     {
@@ -49,18 +55,17 @@ class FloodAreaController extends Controller
             'land_use'      => 'nullable|string|max:255',
             'ownership'     => 'nullable|string|max:255',
             'classification'=> 'nullable|string|max:255',
-            'geometry'      => 'required|json', // geometry must be valid JSON
+            'geometry'      => 'required|json',
         ]);
 
         FloodArea::create($request->all());
 
-        return redirect()
-            ->route('flood-areas.index')
+        return redirect()->route('flood-areas.index')
             ->with('success', 'Flood area added successfully.');
     }
 
     /**
-     * Edit form.
+     * Edit record
      */
     public function edit(FloodArea $floodArea)
     {
@@ -68,7 +73,7 @@ class FloodAreaController extends Controller
     }
 
     /**
-     * Update flood area.
+     * Update record
      */
     public function update(Request $request, FloodArea $floodArea)
     {
@@ -83,60 +88,25 @@ class FloodAreaController extends Controller
 
         $floodArea->update($request->all());
 
-        return redirect()
-            ->route('flood-areas.index')
+        return redirect()->route('flood-areas.index')
             ->with('success', 'Flood area updated successfully.');
     }
 
     /**
-     * Delete flood area.
+     * Delete record
      */
     public function destroy(FloodArea $floodArea)
     {
         $floodArea->delete();
 
-        return redirect()
-            ->route('flood-areas.index')
+        return redirect()->route('flood-areas.index')
             ->with('success', 'Flood area deleted successfully.');
     }
-
     /**
-     * Statistics API (with filters applied).
+     * API endpoint to get all flood areas as GeoJSON.
      */
     public function stats(Request $request)
-    {
-        $query = FloodArea::query();
-
-        // Apply filters
-        if ($request->filled('flood_risk') && $request->flood_risk !== 'all') {
-            $query->where('flood_risk', $request->flood_risk);
-        }
-        if ($request->filled('land_use') && $request->land_use !== 'all') {
-            $query->where('land_use', $request->land_use);
-        }
-
-        // Flood Risk Stats
-        $riskStats = (clone $query)
-            ->select('flood_risk', DB::raw('COUNT(*) as total'))
-            ->groupBy('flood_risk')
-            ->pluck('total', 'flood_risk');
-
-        $riskResult = [
-            'high'   => $riskStats['high'] ?? 0,
-            'medium' => $riskStats['medium'] ?? 0,
-            'low'    => $riskStats['low'] ?? 0,
-            'none'   => $riskStats['none'] ?? 0,
-        ];
-
-        // Land Use Stats
-        $landUseStats = (clone $query)
-            ->select('land_use', DB::raw('COUNT(*) as total'))
-            ->groupBy('land_use')
-            ->pluck('total', 'land_use');
-
-        return response()->json([
-            'floodRisk' => $riskResult,
-            'landUse'   => $landUseStats,
-        ]);
-    }
+{
+    return $this->floodStats->stats($request);
+}
 }

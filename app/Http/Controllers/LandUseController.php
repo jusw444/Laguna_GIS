@@ -3,11 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Models\LandUse;
+use App\Services\LandStatisticsService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class LandUseController extends Controller
 {
+
+    protected $landStats;
+    public function __construct(LandStatisticsService $landStats)
+    {
+        $this->landStats = $landStats;
+    }
+
     public function index(Request $request)
     {
         $query = LandUse::query();
@@ -86,65 +93,8 @@ class LandUseController extends Controller
         return redirect()->route('land-use.index')->with('success', 'Land use data deleted successfully.');
     }
 
-    public function apiIndex()
-    {
-        $data = LandUse::all()->map(function ($lu) {
-            return [
-                'type' => 'Feature',
-                'geometry' => $lu->geometry ? json_decode($lu->geometry, true) : null,
-                'properties' => [
-                    'id' => $lu->id,
-                    'name' => $lu->name,
-                    'land_use' => $lu->land_use,
-                    'ownership' => $lu->ownership,
-                    'classification' => $lu->classification,
-                    'flood_risk' => $lu->flood_risk,
-                ],
-            ];
-        });
-
-        return response()->json([
-            'type' => 'FeatureCollection',
-            'features' => $data,
-        ]);
-    }
-
     public function stats(Request $request)
-    {
-        $query = LandUse::query();
-
-        // Apply filters
-        if ($request->filled('land_use') && $request->land_use !== 'all') {
-            $query->where('land_use', $request->land_use);
-        }
-
-        if ($request->filled('ownership') && $request->ownership !== 'all') {
-            $query->where('ownership', $request->ownership);
-        }
-
-        if ($request->filled('classification') && $request->classification !== 'all') {
-            $query->where('classification', $request->classification);
-        }
-
-        if ($request->filled('flood_risk') && $request->flood_risk !== 'all') {
-            $query->where('flood_risk', $request->flood_risk);
-        }
-
-        return response()->json([
-            'landUse' => $query->clone()
-                ->select('land_use', DB::raw('count(*) as total'))
-                ->groupBy('land_use')
-                ->pluck('total', 'land_use'),
-
-            'ownership' => $query->clone()
-                ->select('ownership', DB::raw('count(*) as total'))
-                ->groupBy('ownership')
-                ->pluck('total', 'ownership'),
-
-            'floodRisk' => $query->clone()
-                ->select('flood_risk', DB::raw('count(*) as total'))
-                ->groupBy('flood_risk')
-                ->pluck('total', 'flood_risk'),
-        ]);
-    }
+{
+    return $this->landStats->stats($request);
+}
 }

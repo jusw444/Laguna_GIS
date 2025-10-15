@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.guest')
 
 @section('title', 'Land Use Analysis')
 
@@ -9,9 +9,6 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2><i class="fas fa-map-marked-alt"></i> Land Use Analysis</h2>
             <div class="btn-group">
-                <a href="{{ route('land-use.create') }}" class="btn btn-danger">
-                    <i class="fas fa-plus"></i> Add Land Use
-                </a>
                 <button class="btn btn-outline-primary" id="exportData">
                     <i class="fas fa-download"></i> Export Data (PNG)
                 </button>
@@ -24,9 +21,8 @@
         <div class="row" id="exportContainer">
             <!-- Sidebar -->
             @include('sidebars.land-sidebar', [
-        'formAction' => route('land-use.index')
+        'formAction' => route('landing.land')
     ])
-
 
             <!-- Map + Data -->
             <div class="col-md-9">
@@ -59,7 +55,6 @@
                                         <th>Ownership</th>
                                         <th>Classification</th>
                                         <th>Flood Risk</th>
-                                        <th class="text-center">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -74,18 +69,6 @@
                                             <td>{{ $lu->ownership ?? 'N/A' }}</td>
                                             <td>{{ $lu->classification ?? 'N/A' }}</td>
                                             <td>{{ $lu->flood_risk ?? 'N/A' }}</td>
-                                            <td class="text-center">
-                                                <a href="{{ route('land-use.edit', $lu->id) }}" class="btn btn-sm text-white" style="background-color:#0d47a1;">
-                                                    <i class="fas fa-edit"></i> Edit
-                                                </a>
-                                                <form action="{{ route('land-use.destroy', $lu->id) }}" method="POST" style="display:inline-block;">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?')">
-                                                        <i class="fas fa-trash"></i> Delete
-                                                    </button>
-                                                </form>
-                                            </td>
                                         </tr>
                                     @endforeach
                                 </tbody>
