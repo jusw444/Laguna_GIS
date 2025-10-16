@@ -29,7 +29,7 @@
                                     <option value="communal" {{ request('ownership') == 'communal' ? 'selected' : '' }}>Communal</option>
                                 </select>
                             </div>
-                            <button class="btn btn-primary w-100" type="submit">
+                            <button class="btn btn-danger w-100" type="submit">
                                 <i class="fas fa-filter"></i> Apply Filters
                             </button>
                         </form>

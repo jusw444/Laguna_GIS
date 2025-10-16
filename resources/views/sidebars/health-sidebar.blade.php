@@ -33,7 +33,7 @@
                         </option>
                     </select>
                 </div>
-                <button class="btn btn-primary w-100" type="submit">Apply Filters</button>
+                <button class="btn btn-danger w-100" type="submit">Apply Filters</button>
             </form>
         </div>
     </div>

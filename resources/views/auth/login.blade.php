@@ -1,4 +1,4 @@
-@extends('layouts.guest')
+@extends('layouts.auth')
 
 @section('title', 'Login - GIS Application')
 
@@ -30,7 +30,7 @@
 
                 <!-- Login Card -->
                 <div class="card shadow-sm border-0">
-                    <div class="card-header bg-primary text-white text-center py-3">
+                    <div class="card-header bg-danger text-white text-center py-3">
                         <h5 class="mb-0"><i class="fas fa-sign-in-alt me-2"></i>Account Login</h5>
                     </div>
                     <div class="card-body p-4">
